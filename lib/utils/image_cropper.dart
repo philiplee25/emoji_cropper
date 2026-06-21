@@ -3,7 +3,10 @@ import 'package:image/image.dart' as img;
 
 class ImageCropper {
   /// 1260x1080 이미지를 받아서 180x180 42개로 나누는 함수
-  static Future<List<Uint8List>> splitImage(Uint8List inputImageBytes) async {
+  static Future<List<Uint8List>> splitImage(
+    Uint8List inputImageBytes, {
+    Function(int current, int total)? onProgress,
+  }) async {
     // 잘린 42개의 이미지 list
     List<Uint8List> pieces = [];
 
@@ -13,7 +16,7 @@ class ImageCropper {
 
     // 만약 이미지가 깨졌거나 이상한 파일이면 에러
     if (originalImage == null) {
-      throw Exception("? 뭐 올린거임;; 이상한거 올리지 마세요!");
+      throw Exception();
     }
 
     await Future.delayed(const Duration(milliseconds: 50));
@@ -40,12 +43,15 @@ class ImageCropper {
       await Future.delayed(const Duration(milliseconds: 50));
     } else {
       // 케이스 3: 그 외의 모든 이상한 사이즈 -> 작업 중단하고 에러 던지기!
-      throw Exception("아니 규격에 맞는거 올리라고오오오오오오\n1260x1080 아니면 2520x2160 취급함");
+      throw Exception();
     }
 
     // 자를 조각의 규격 설정
     const int pieceWidth = 180;
     const int pieceHeight = 180;
+
+    int totalPieces = 42; // 총 조각 개수
+    int currentPiece = 0; // 현재 자른 조각 개수
 
     // 2. crop range 설정 (세로 6줄, 가로 7칸 = 총 42번 반복)
     for (int y = 0; y < 6; y++) {
@@ -67,6 +73,11 @@ class ImageCropper {
         // 4. list에 넣기
         // 잘라낸 픽셀 데이터를 PNG 형태로 encoding
         pieces.add(img.encodePng(croppedPiece));
+
+        currentPiece++;
+        if (onProgress != null) {
+          onProgress(currentPiece, totalPieces);
+        }
 
         // 1개 이미지당 0.001초 대기
         await Future.delayed(const Duration(milliseconds: 1));

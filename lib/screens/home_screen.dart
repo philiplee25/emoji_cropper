@@ -21,6 +21,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<int> _pieceOrder = [];
   bool _isLoading = false; // 로딩 상태 표시용
 
+  int _currentProgress = 0;
+
   // 이미지를 선택, 크롭
   Future<void> _pickAndProcessImage() async {
     final ImagePicker picker = ImagePicker();
@@ -36,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _isLoading = true; // 로딩 시작!
       _croppedPieces = []; // 기존 조각들 초기화
+      _currentProgress = 0; // 진행률 0/42로 초기화
     });
 
     await Future.delayed(const Duration(milliseconds: 300));
@@ -44,8 +47,25 @@ class _HomeScreenState extends State<HomeScreen> {
       // 2. 이미지 파일을 컴퓨터가 읽을 수 있는 바이트 데이터로 변환
       final Uint8List imageBytes = await imageFile.readAsBytes();
 
+      // 무거운 가위질 도구를 꺼내기 전에, 플러터 기본 엔진으로 껍데기(사이즈)만 먼저 스캔합니다!
+      final imageInfo = await decodeImageFromList(imageBytes);
+      final int w = imageInfo.width;
+      final int h = imageInfo.height;
+
+      // 규격이 안 맞으면? 가위질(ImageCropper)로 안 넘기고 여기서 바로 쳐냅니다!
+      if (!((w == 1260 && h == 1080) || (w == 2520 && h == 2160))) {
+        throw Exception();
+      }
+
       // 3. ImageCropper에 데이터 넘기기
-      final List<Uint8List> result = await ImageCropper.splitImage(imageBytes);
+      final List<Uint8List> result = await ImageCropper.splitImage(
+        imageBytes,
+        onProgress: (current, total) {
+          setState(() {
+            _currentProgress = current; // 요리사가 부른 숫자를 화면 변수에 넣고 새로고침!
+          });
+        },
+      );
 
       // 4. crop 성공 후 setState
       setState(() {
@@ -89,30 +109,41 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _showErrorDialogs() async {
     // 1. 23개의 각기 다른 멘트를 리스트로 준비합니다.
     final List<String> messages = [
-      "20) 규격에 맞지 않는 사진을 올리셨네요?",
-      "19) 이러시면 제가 아주 곤란합니다",
-      "18) 1260x1080 아니면 2520x2160 만 올리라 했는데 말이야",
-      "17) 나는 분명 경고를 했었어 ㅎㅎ",
-      "16) 왜 말을 안들으세요",
-      "15) 다음부터는 안틀리시겠죠?",
-      "14) 꼼꼼히 확인하고 올려주세요",
-      "13) 물론 아직 12개가 더 남긴 했지만요 ㅎㅎ",
-      "12) 꼬우면 개발자 하던가~",
-      "11) 화나시나요 ㅎㅎㅎㅎㅎㅎㅎㅎㅎㅎㅎㅎ",
-      "10) 그치만 센세가 뭘 할 수 있죠?",
-      "9) 깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔",
-      "8) 다와간다!",
+      "30) 엇?",
+      "29) ㅎㅎㅎㅎㅎㅎㅎㅎㅎㅎㅎ",
+      "28) 규격에 맞지 않는 사진을 올리셨네요?ㅎㅎ",
+      "27) 이러시면 제가 아주 곤란합니다",
+      "26) 1260x1080 아니면 2520x2160 만 올리라 했는데 말이야",
+      "25) 나는 분명 경고를 했었어 ㅎㅎ",
+      "24) 왜 말을 안들으셨어요",
+      "23) 안되겠다",
+      "22) 너는 혼 좀 나야겠다",
+      "21) 몇대 맞을래",
+      "20) 한대? 한대로 되겠어?",
+      "19) 짝!",
+      "18) 다음부터는 안틀려야겠지?",
+      "17) 괜히 잘못 올렸다 싶죠?",
+      "16) 아차싶죠?",
+      "15) 잘못 걸렸다 싶죠?",
+      "14) 화나시나요 ㅎㅎㅎㅎㅎㅎㅎㅎㅎㅎㅎㅎ",
+      "13) 그치만 센세가 뭘 할 수 있죠?",
+      "12) 깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔",
+      "11) 꼬우면 개발자 하던가~",
+      "10) 개빡쳐도 해야지 어쩌겠어요 ㅎㅎ 화이팅~",
+      "9) 영!",
+      "8) 차!",
       "7) 영!",
       "6) 차!",
-      "5) 영!",
-      "4) 차!",
-      "3) 다왔다 진짜 이제 세개만 더!",
+      "5) 이제 진짜 다왔다.",
+      "4)끝이 보이네ㅠ",
+      "3)너무 아쉽고",
       "2) 두개만 더!",
       "1) 마지막 한개!",
       "1) 회원님 한개만 더!",
       "1) 회원님 진짜 마지막 한개만 더!",
       "1) 회원님 진짜 진짜 마지막으로 한개만 더!",
-      "0) 다음부턴 틀리지 말고 잘 확인한 후 올리세요^^",
+      "1) 진짜 마지막! 할 수 있따!",
+      "다음부턴 틀리지 말고 잘 확인한 후 올리세요^^",
     ];
 
     // 2. 리스트의 길이(23번)만큼 반복문을 돌립니다.
@@ -125,10 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
           return AlertDialog(
             title: Text(
               '저런ㅋ', // 타이틀에 현재 몇 번째 창인지 보여줍니다.
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             content: Text(messages[i]),
             actions: [
@@ -205,7 +233,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // 2. 상태에 따른 화면 노출 (로딩 중 / 바둑판 / 대기 화면)
               if (_isLoading)
-                const CircularProgressIndicator() // 로딩 뺑뺑이
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _currentProgress == 0
+                          ? '이미지 분석 및 리사이즈 중...' // 0일 때
+                          : '$_currentProgress / 42 분할 중...', // 1부터
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.teal,
+                      ),
+                    ),
+                  ],
+                )
               else if (_croppedPieces.isNotEmpty)
                 // 이미지가 성공적으로 잘렸다면 7x6 GridView
                 Expanded(
@@ -229,11 +271,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       });
                     },
                     itemBuilder: (context, index) {
-                      // 🌟 현재 자리에 와야 할 이미지의 진짜 번호표를 확인합니다.
+                      // 현재 자리에 와야 할 이미지의 진짜 번호
                       int realPieceIndex = _pieceOrder[index];
 
                       return Container(
-                        // ⚠️ [매우 중요] ReorderableGridView는 각 조각이 누군지 구분하기 위해 고유한 key가 꼭 필요합니다!
+                        // ReorderableGridView는 각 조각이 누군지 구분하기 위해 고유한 key가 반드시 필요!!!!!
                         key: ValueKey(realPieceIndex),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.grey.shade300),
