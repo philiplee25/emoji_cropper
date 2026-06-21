@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
 
-class ImageCutter {
+class ImageCropper {
   /// 1260x1080 이미지를 받아서 180x180 42개로 나누는 함수
   static Future<List<Uint8List>> splitImage(Uint8List inputImageBytes) async {
     // 잘린 42개의 이미지 list
@@ -47,14 +47,14 @@ class ImageCutter {
     const int pieceWidth = 180;
     const int pieceHeight = 180;
 
-    // 2. crop (세로 6줄, 가로 7칸 = 총 42번 반복)
+    // 2. crop range 설정 (세로 6줄, 가로 7칸 = 총 42번 반복)
     for (int y = 0; y < 6; y++) {
       for (int x = 0; x < 7; x++) {
         // 어디서부터 자를지 시작점 계산
         int startX = x * pieceWidth;
         int startY = y * pieceHeight;
 
-        // 3. 싹둑! 자르기
+        // 3. crop
         // copyCrop이라는 기본 제공 기능으로 원하는 위치와 크기만큼 잘라냅니다.
         img.Image croppedPiece = img.copyCrop(
           workingImage,

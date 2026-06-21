@@ -2,7 +2,7 @@ import 'dart:html' as html; // 웹 브라우저 다운로드 기능
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../utils/image_cutter.dart';
+import '../utils/image_cropper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -37,15 +37,15 @@ class _HomeScreenState extends State<HomeScreen> {
       // 2. 이미지 파일을 컴퓨터가 읽을 수 있는 바이트 데이터로 변환
       final Uint8List imageBytes = await imageFile.readAsBytes();
 
-      // 3. ImageCutter에 데이터 넘기기
-      final List<Uint8List> result = await ImageCutter.splitImage(imageBytes);
+      // 3. ImageCropper에 데이터 넘기기
+      final List<Uint8List> result = await ImageCropper.splitImage(imageBytes);
 
       // 4. crop 성공 후 setState
       setState(() {
         _croppedPieces = result;
       });
     } catch (e) {
-      // ImageCutter가 throw Exception으로 던진 에러 catch
+      // ImageCropper가 throw Exception으로 던진 에러 catch
       _showErrorDialog(e.toString().replaceAll("Exception: ", ""));
     } finally {
       setState(() {
@@ -54,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // 💾 웹 브라우저에서 이미지를 다운로드하는 함수
+  // 웹 브라우저에서 이미지를 다운로드하는 함수
   void _downloadImage(Uint8List bytes, int index) {
     // 1. 파일 이름 규칙 적용: 1번부터 42번까지 '01', '02' 형태로 번호를 매깁니다.
     // index는 0부터 시작하므로 1을 더해주고 padLeft를 써서 무조건 2자리로 만듭니다.
@@ -70,9 +70,9 @@ class _HomeScreenState extends State<HomeScreen> {
     // 4. 가상의 다운로드 링크를 만들어서 강제 클릭
     html.AnchorElement(href: url)
       ..setAttribute("download", fileName)
-      ..click(); // 사용자 대신 클릭!
+      ..click(); // 사용자 대신 클릭
 
-    // 5. 다운로드가 끝났으면 임시 주소를 청소해 줍니다. (메모리 절약)
+    // 5. 다운로드 후 임시 주소 청소 (메모리 절약)
     html.Url.revokeObjectUrl(url);
   }
 
