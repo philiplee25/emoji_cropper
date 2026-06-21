@@ -65,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // WASM 호환 방식으로 웹 브라우저에서 이미지 다운로드
   void _downloadImage(Uint8List bytes, int index) {
     String fileNumber = (index + 1).toString().padLeft(2, '0');
-    String fileName = 'image_piece_$fileNumber.png';
+    String fileName = '$fileNumber.png';
 
     // 1. 바이트 데이터를 최신 자바스크립트/WASM이 이해할 수 있는 형태로 변환합니다. (.toJS 사용)
     final blob = web.Blob([bytes.toJS].toJS);
