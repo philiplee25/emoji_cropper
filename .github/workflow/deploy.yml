@@ -1,0 +1,31 @@
+name: Flutter Web Deploy
+
+on:
+  push:
+    branches:
+      - main # (주의) 만약 본인의 기본 브랜치가 master라면 master로 바꿔주세요!
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 소스 코드 가져오기
+        uses: actions/checkout@v3
+
+      - name: 플러터 세팅하기
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: 패키지 설치
+        run: flutter pub get
+
+      # 🌟 [중요] 여기에 방금 만든 깃허브 레포지토리 이름을 적어주세요!
+      - name: 플러터 웹 빌드 (Base href 설정)
+        run: flutter build web --base-href "/emoji-cropper/" 
+
+      - name: 깃허브 페이지에 배포하기
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web

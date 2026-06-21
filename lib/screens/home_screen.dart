@@ -331,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 // 이미지를 아직 올리지 않았을 때 보여주는 문구
                 const Text(
                   '1260x1080 or 2520x2160 크기 아니면 후회할거임 ㅎㅎㅎㅎ',
-                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                  style: TextStyle(color: Colors.black, fontSize: 14),
                 ),
             ],
           ),
@@ -340,3 +340,188 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+//   //  보노보노 배경
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       // body를 appbar 뒤쪽 꼭대기까지 확장
+//       extendBodyBehindAppBar: true,
+
+//       appBar: AppBar(
+//         title: const Text(
+//           '아아아아아아 너무 귀찮아아아아아',
+//           style: TextStyle(color: Colors.black),
+//         ),
+//         // appbar 배경 투명화, 그림자 제거
+//         backgroundColor: Colors.transparent,
+//         elevation: 0,
+//         foregroundColor: Colors.white,
+//       ),
+//       body: Container(
+//         decoration: BoxDecoration(
+//           image: DecorationImage(image: AssetImage('assets/images/22.jpg')),
+//         ),
+//         child: SafeArea(
+//           child: Center(
+//             child: Padding(
+//               padding: const EdgeInsets.all(20.0),
+//               child: Column(
+//                 mainAxisAlignment: MainAxisAlignment.center,
+//                 children: [
+//                   // 1. 이미지 업로드 버튼
+//                   ElevatedButton.icon(
+//                     onPressed: _isLoading ? null : _pickAndProcessImage,
+//                     icon: const Icon(Icons.upload_file),
+//                     label: const Text('이미지 가져오기'),
+//                     style: ElevatedButton.styleFrom(
+//                       padding: const EdgeInsets.symmetric(
+//                         horizontal: 24,
+//                         vertical: 16,
+//                       ),
+//                       textStyle: const TextStyle(
+//                         fontSize: 16,
+//                         fontWeight: FontWeight.bold,
+//                       ),
+//                     ),
+//                   ),
+//                   const SizedBox(height: 30),
+
+//                   if (_croppedPieces.isNotEmpty && !_isLoading) ...[
+//                     ElevatedButton.icon(
+//                       onPressed: () {
+//                         // 텍스트 필드가 사라졌으니, 조각과 순서표만 깔끔하게 넘깁니다!
+//                         AllDownload.downloadZip(_croppedPieces, _pieceOrder);
+//                       },
+//                       icon: const Icon(Icons.folder_zip),
+//                       label: const Text('모든 조각 한번에 다운로드 (ZIP)'),
+//                       style: ElevatedButton.styleFrom(
+//                         backgroundColor: Colors.teal,
+//                         foregroundColor: Colors.white,
+//                         padding: const EdgeInsets.symmetric(
+//                           horizontal: 32,
+//                           vertical: 18,
+//                         ),
+//                         textStyle: const TextStyle(
+//                           fontSize: 15,
+//                           fontWeight: FontWeight.bold,
+//                         ),
+//                         shape: RoundedRectangleBorder(
+//                           borderRadius: BorderRadius.circular(8),
+//                         ),
+//                       ),
+//                     ),
+//                     const SizedBox(height: 30),
+//                   ],
+
+//                   // 2. 상태에 따른 화면 노출 (로딩 중 / 바둑판 / 대기 화면)
+//                   if (_isLoading)
+//                     Column(
+//                       mainAxisAlignment: MainAxisAlignment.center,
+//                       children: [
+//                         Text(
+//                           _currentProgress == 0
+//                               ? '이미지 분석 및 리사이즈 중...' // 0일 때
+//                               : '$_currentProgress / 42 분할 중...', // 1부터
+//                           style: const TextStyle(
+//                             fontSize: 16,
+//                             fontWeight: FontWeight.bold,
+//                             color: Colors.teal,
+//                           ),
+//                         ),
+//                       ],
+//                     )
+//                   else if (_croppedPieces.isNotEmpty)
+//                     // 이미지가 성공적으로 잘렸다면 7x6 GridView
+//                     Expanded(
+//                       child: ReorderableGridView.builder(
+//                         // drag&drop 인식시간 0.3초
+//                         dragStartDelay: const Duration(milliseconds: 300),
+
+//                         gridDelegate:
+//                             const SliverGridDelegateWithFixedCrossAxisCount(
+//                               crossAxisCount: 7,
+//                               crossAxisSpacing: 8,
+//                               mainAxisSpacing: 8,
+//                             ),
+//                         itemCount: _croppedPieces.length,
+//                         // 🌟 드래그 앤 드롭으로 위치가 바뀌었을 때 실행되는 함수입니다!
+//                         onReorder: (oldIndex, newIndex) {
+//                           setState(() {
+//                             // 번호표 리스트에서 원래 있던 번호를 빼서, 새로운 자리에 쏙 끼워 넣습니다.
+//                             final int item = _pieceOrder.removeAt(oldIndex);
+//                             _pieceOrder.insert(newIndex, item);
+//                           });
+//                         },
+//                         itemBuilder: (context, index) {
+//                           // 현재 자리에 와야 할 이미지의 진짜 번호
+//                           int realPieceIndex = _pieceOrder[index];
+
+//                           return Container(
+//                             // ReorderableGridView는 각 조각이 누군지 구분하기 위해 고유한 key가 반드시 필요!!!!!
+//                             key: ValueKey(realPieceIndex),
+//                             decoration: BoxDecoration(
+//                               border: Border.all(color: Colors.grey.shade300),
+//                               borderRadius: BorderRadius.circular(4),
+//                             ),
+//                             child: Stack(
+//                               fit: StackFit.expand,
+//                               children: [
+//                                 ClipRRect(
+//                                   borderRadius: BorderRadius.circular(4),
+//                                   // 순서가 바뀐 번호표(realPieceIndex)에 맞는 이미지를 그려줍니다.
+//                                   child: Image.memory(
+//                                     _croppedPieces[realPieceIndex],
+//                                     fit: BoxFit.cover,
+//                                   ),
+//                                 ),
+//                                 Material(
+//                                   color: Colors.transparent,
+//                                   child: InkWell(
+//                                     onTap: () => _downloadImage(
+//                                       _croppedPieces[realPieceIndex],
+//                                       index,
+//                                     ),
+//                                     child: Container(
+//                                       alignment: Alignment.bottomRight,
+//                                       padding: const EdgeInsets.all(4),
+//                                       child: Container(
+//                                         decoration: BoxDecoration(
+//                                           color: Colors.black.withValues(
+//                                             alpha: 0.6,
+//                                           ),
+//                                           shape: BoxShape.circle,
+//                                         ),
+//                                         child: const Padding(
+//                                           padding: EdgeInsets.all(6.0),
+//                                           child: Icon(
+//                                             Icons.download,
+//                                             color: Colors.white,
+//                                             size: 20,
+//                                           ),
+//                                         ),
+//                                       ),
+//                                     ),
+//                                   ),
+//                                 ),
+//                               ],
+//                             ),
+//                           );
+//                         },
+//                       ),
+//                     )
+//                   else
+//                     // 이미지를 아직 올리지 않았을 때 보여주는 문구
+//                     const Text(
+//                       '1260x1080 or 2520x2160 크기 아니면 후회할거임 ㅎㅎㅎㅎ',
+//                       style: TextStyle(color: Colors.black, fontSize: 14),
+//                     ),
+//                 ],
+//               ),
+//             ),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
