@@ -1,3 +1,4 @@
+import 'package:emoji_cropper/utils/all_download.dart';
 import 'package:web/web.dart' as web;
 import 'dart:js_interop'; // 데이터를 최신 방식으로 변환해 주는 필수 도구
 import 'dart:typed_data';
@@ -123,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ElevatedButton.icon(
                 onPressed: _isLoading ? null : _pickAndProcessImage,
                 icon: const Icon(Icons.upload_file),
-                label: const Text('1260x1080 or 2520x2160 크기 아니면 후회할거임 ㅎㅎ'),
+                label: const Text('이미지 가져오기'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -137,6 +138,33 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 30),
 
+              if (_croppedPieces.isNotEmpty && !_isLoading) ...[
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // 텍스트 필드가 사라졌으니, 조각과 순서표만 깔끔하게 넘깁니다!
+                    AllDownload.downloadZip(_croppedPieces, _pieceOrder);
+                  },
+                  icon: const Icon(Icons.folder_zip),
+                  label: const Text('모든 조각 한번에 다운로드 (ZIP)'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 18,
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 30),
+              ],
+
               // 2. 상태에 따른 화면 노출 (로딩 중 / 바둑판 / 대기 화면)
               if (_isLoading)
                 const CircularProgressIndicator() // 로딩 뺑뺑이
@@ -144,6 +172,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 // 이미지가 성공적으로 잘렸다면 7x6 GridView
                 Expanded(
                   child: ReorderableGridView.builder(
+                    // drag&drop 인식시간 0.3초
+                    dragStartDelay: const Duration(milliseconds: 300),
+
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 7,
@@ -219,7 +250,7 @@ class _HomeScreenState extends State<HomeScreen> {
               else
                 // 이미지를 아직 올리지 않았을 때 보여주는 문구
                 const Text(
-                  '이미지를 업로드하면 42개의 조각으로 정밀하게 분할됩니다.',
+                  '1260x1080 or 2520x2160 크기 아니면 후회할거임 ㅎㅎㅎㅎ',
                   style: TextStyle(color: Colors.grey, fontSize: 14),
                 ),
             ],

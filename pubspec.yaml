@@ -39,6 +39,7 @@ dependencies:
   image: ^4.9.1
   reorderable_grid_view: ^2.2.8
   web: ^1.1.1
+  archive: ^4.0.9
 
 dev_dependencies:
   flutter_test:
