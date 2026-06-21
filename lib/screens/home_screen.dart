@@ -1,8 +1,10 @@
-import 'dart:html' as html; // 웹 브라우저 다운로드 기능
+import 'package:web/web.dart' as web;
+import 'dart:js_interop'; // 데이터를 최신 방식으로 변환해 주는 필수 도구
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../utils/image_cropper.dart';
+import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,6 +16,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   // 잘린 42개의 이미지 조각(바이트 데이터)들을 담아둘 상태 변수입니다.
   List<Uint8List> _croppedPieces = [];
+  // 이미지 조각들의 '순서 번호표'를 담을 리스트를 새로 추가합니다
+  final List<int> _pieceOrder = [];
   bool _isLoading = false; // 로딩 상태 표시용
 
   // 이미지를 선택, 크롭
@@ -43,6 +47,10 @@ class _HomeScreenState extends State<HomeScreen> {
       // 4. crop 성공 후 setState
       setState(() {
         _croppedPieces = result;
+
+        // setState 할 때마다 list clear
+        _pieceOrder.clear();
+        _pieceOrder.addAll(List.generate(result.length, (index) => index));
       });
     } catch (e) {
       // ImageCropper가 throw Exception으로 던진 에러 catch
@@ -54,26 +62,25 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // 웹 브라우저에서 이미지를 다운로드하는 함수
+  // WASM 호환 방식으로 웹 브라우저에서 이미지 다운로드
   void _downloadImage(Uint8List bytes, int index) {
-    // 1. 파일 이름 규칙 적용: 1번부터 42번까지 '01', '02' 형태로 번호를 매깁니다.
-    // index는 0부터 시작하므로 1을 더해주고 padLeft를 써서 무조건 2자리로 만듭니다.
     String fileNumber = (index + 1).toString().padLeft(2, '0');
     String fileName = 'image_piece_$fileNumber.png';
 
-    // 2. 바이트 데이터를 웹 브라우저가 인식할 수 있는 파일 형태(Blob)로 포장
-    final blob = html.Blob([bytes]);
+    // 1. 바이트 데이터를 최신 자바스크립트/WASM이 이해할 수 있는 형태로 변환합니다. (.toJS 사용)
+    final blob = web.Blob([bytes.toJS].toJS);
 
-    // 3. 포장된 파일의 임시 URL 생성
-    final url = html.Url.createObjectUrlFromBlob(blob);
+    // 2. 가상의 다운로드 인터넷 주소(URL)를 만듭니다.
+    final url = web.URL.createObjectURL(blob);
 
-    // 4. 가상의 다운로드 링크를 만들어서 강제 클릭
-    html.AnchorElement(href: url)
-      ..setAttribute("download", fileName)
-      ..click(); // 사용자 대신 클릭
+    // 3. 웹상에 보이지 않는 <a> 태그를 만들고, 거기에 주소를 걸어서 강제 클릭시킵니다!
+    web.document.createElement('a') as web.HTMLAnchorElement
+      ..href = url
+      ..download = fileName
+      ..click();
 
-    // 5. 다운로드 후 임시 주소 청소 (메모리 절약)
-    html.Url.revokeObjectUrl(url);
+    // 4. 다운로드가 완료되면 임시 주소를 메모리에서 지워줍니다.
+    web.URL.revokeObjectURL(url);
   }
 
   // 에러 발생 시 사용자에게 띄워줄 Alert 팝업창
@@ -136,38 +143,49 @@ class _HomeScreenState extends State<HomeScreen> {
               else if (_croppedPieces.isNotEmpty)
                 // 이미지가 성공적으로 잘렸다면 7x6 GridView
                 Expanded(
-                  child: GridView.builder(
+                  child: ReorderableGridView.builder(
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 7, // 가로 7칸 정렬!
-                          crossAxisSpacing: 8, // 조각 사이 가로 여백
-                          mainAxisSpacing: 8, // 조각 사이 세로 여백
+                          crossAxisCount: 7,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
                         ),
-                    itemCount: _croppedPieces.length, // 총 42개
+                    itemCount: _croppedPieces.length,
+                    // 🌟 드래그 앤 드롭으로 위치가 바뀌었을 때 실행되는 함수입니다!
+                    onReorder: (oldIndex, newIndex) {
+                      setState(() {
+                        // 번호표 리스트에서 원래 있던 번호를 빼서, 새로운 자리에 쏙 끼워 넣습니다.
+                        final int item = _pieceOrder.removeAt(oldIndex);
+                        _pieceOrder.insert(newIndex, item);
+                      });
+                    },
                     itemBuilder: (context, index) {
+                      // 🌟 현재 자리에 와야 할 이미지의 진짜 번호표를 확인합니다.
+                      int realPieceIndex = _pieceOrder[index];
+
                       return Container(
+                        // ⚠️ [매우 중요] ReorderableGridView는 각 조각이 누군지 구분하기 위해 고유한 key가 꼭 필요합니다!
+                        key: ValueKey(realPieceIndex),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.grey.shade300),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        // 🌟 Stack을 사용하면 이미지 위에 버튼을 겹쳐서 올릴 수 있습니다!
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            // 1. 바닥에 깔리는 잘린 이미지
                             ClipRRect(
                               borderRadius: BorderRadius.circular(4),
+                              // 순서가 바뀐 번호표(realPieceIndex)에 맞는 이미지를 그려줍니다.
                               child: Image.memory(
-                                _croppedPieces[index],
+                                _croppedPieces[realPieceIndex],
                                 fit: BoxFit.cover,
                               ),
                             ),
-                            // 2. 이미지 위에 올라가는 반투명 다운로드 버튼
                             Material(
-                              color: Colors.transparent, // 배경은 투명하게
+                              color: Colors.transparent,
                               child: InkWell(
                                 onTap: () => _downloadImage(
-                                  _croppedPieces[index],
+                                  _croppedPieces[realPieceIndex],
                                   index,
                                 ),
                                 child: Container(
@@ -177,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     decoration: BoxDecoration(
                                       color: Colors.black.withValues(
                                         alpha: 0.6,
-                                      ), // 반투명 검은색 배경
+                                      ),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Padding(
