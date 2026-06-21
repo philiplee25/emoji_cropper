@@ -38,6 +38,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _croppedPieces = []; // 기존 조각들 초기화
     });
 
+    await Future.delayed(const Duration(milliseconds: 300));
+
     try {
       // 2. 이미지 파일을 컴퓨터가 읽을 수 있는 바이트 데이터로 변환
       final Uint8List imageBytes = await imageFile.readAsBytes();
@@ -55,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     } catch (e) {
       // ImageCropper가 throw Exception으로 던진 에러 catch
-      _showErrorDialog(e.toString().replaceAll("Exception: ", ""));
+      _showErrorDialogs();
     } finally {
       setState(() {
         _isLoading = false; // 성공하든 실패하든 로딩 끝!
@@ -84,26 +86,62 @@ class _HomeScreenState extends State<HomeScreen> {
     web.URL.revokeObjectURL(url);
   }
 
-  // 에러 발생 시 사용자에게 띄워줄 Alert 팝업창
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text(
-            '규격 확인 오류',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context), // 팝업 닫기
-              child: const Text('확인'),
+  Future<void> _showErrorDialogs() async {
+    // 1. 23개의 각기 다른 멘트를 리스트로 준비합니다.
+    final List<String> messages = [
+      "20) 규격에 맞지 않는 사진을 올리셨네요?",
+      "19) 이러시면 제가 아주 곤란합니다",
+      "18) 1260x1080 아니면 2520x2160 만 올리라 했는데 말이야",
+      "17) 나는 분명 경고를 했었어 ㅎㅎ",
+      "16) 왜 말을 안들으세요",
+      "15) 다음부터는 안틀리시겠죠?",
+      "14) 꼼꼼히 확인하고 올려주세요",
+      "13) 물론 아직 12개가 더 남긴 했지만요 ㅎㅎ",
+      "12) 꼬우면 개발자 하던가~",
+      "11) 화나시나요 ㅎㅎㅎㅎㅎㅎㅎㅎㅎㅎㅎㅎ",
+      "10) 그치만 센세가 뭘 할 수 있죠?",
+      "9) 깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔",
+      "8) 다와간다!",
+      "7) 영!",
+      "6) 차!",
+      "5) 영!",
+      "4) 차!",
+      "3) 다왔다 진짜 이제 세개만 더!",
+      "2) 두개만 더!",
+      "1) 마지막 한개!",
+      "1) 회원님 한개만 더!",
+      "1) 회원님 진짜 마지막 한개만 더!",
+      "1) 회원님 진짜 진짜 마지막으로 한개만 더!",
+      "0) 다음부턴 틀리지 말고 잘 확인한 후 올리세요^^",
+    ];
+
+    // 2. 리스트의 길이(23번)만큼 반복문을 돌립니다.
+    for (int i = 0; i < messages.length; i++) {
+      // 🌟 await가 핵심! 사용자가 창을 닫을 때까지 여기서 코드가 멈춰서 기다립니다.
+      await showDialog(
+        context: context,
+        barrierDismissible: false, // 😈 악마의 옵션: 창 바깥의 까만 배경을 눌러도 안 닫히게 막아버립니다!
+        builder: (context) {
+          return AlertDialog(
+            title: Text(
+              '저런ㅋ', // 타이틀에 현재 몇 번째 창인지 보여줍니다.
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
             ),
-          ],
-        );
-      },
-    );
+            content: Text(messages[i]),
+            actions: [
+              TextButton(
+                onPressed: () =>
+                    Navigator.pop(context), // 팝업 닫기 (이걸 눌러야 다음 반복문으로 넘어감)
+                child: const Text('확인ㅋ'),
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 
   @override

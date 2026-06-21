@@ -13,8 +13,10 @@ class ImageCropper {
 
     // 만약 이미지가 깨졌거나 이상한 파일이면 에러
     if (originalImage == null) {
-      throw Exception("이미지를 읽을 수 없습니다. 올바른 이미지 파일인지 확인해 주세요.");
+      throw Exception("? 뭐 올린거임;; 이상한거 올리지 마세요!");
     }
+
+    await Future.delayed(const Duration(milliseconds: 50));
 
     // 규격표 정의
     const int targetWidth = 1260;
@@ -24,7 +26,6 @@ class ImageCropper {
 
     img.Image workingImage = originalImage;
 
-    // 🌟 [엄격한 입구 컷 로직] 🌟
     if (originalImage.width == targetWidth &&
         originalImage.height == targetHeight) {
       // 케이스 1: 1260 x 1080 (정상 규격) -> 통과! 아무것도 안 함.
@@ -36,11 +37,10 @@ class ImageCropper {
         width: targetWidth,
         height: targetHeight,
       );
+      await Future.delayed(const Duration(milliseconds: 50));
     } else {
       // 케이스 3: 그 외의 모든 이상한 사이즈 -> 작업 중단하고 에러 던지기!
-      throw Exception(
-        "지원하지 않는 이미지 사이즈입니다.\n1260x1080 또는 2520x2160 해상도만 업로드 가능합니다.",
-      );
+      throw Exception("아니 규격에 맞는거 올리라고오오오오오오\n1260x1080 아니면 2520x2160 취급함");
     }
 
     // 자를 조각의 규격 설정
@@ -67,6 +67,9 @@ class ImageCropper {
         // 4. list에 넣기
         // 잘라낸 픽셀 데이터를 PNG 형태로 encoding
         pieces.add(img.encodePng(croppedPiece));
+
+        // 1개 이미지당 0.001초 대기
+        await Future.delayed(const Duration(milliseconds: 1));
       }
     }
 
