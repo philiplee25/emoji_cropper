@@ -22,7 +22,7 @@ jobs:
 
       # 🌟 [중요] 여기에 방금 만든 깃허브 레포지토리 이름을 적어주세요!
       - name: 플러터 웹 빌드 (Base href 설정)
-        run: flutter build web --base-href "/philiplee25/emoji_cropper/" 
+        run: flutter build web --base-href "/emoji_cropper/" 
 
       - name: 깃허브 페이지에 배포하기
         uses: peaceiris/actions-gh-pages@v3
