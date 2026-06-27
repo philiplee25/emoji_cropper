@@ -6,7 +6,7 @@ import '../screens/home_screen.dart';
 class ImageCropper {
   static Future<List<Uint8List>> splitImage(
     Uint8List inputImageBytes, {
-    required SplitMode mode, // 🌟 이제 mode 파라미터를 필수(required)로 받습니다!
+    required SplitMode mode, // mode 파라미터 required
     Function(int current, int total)? onProgress,
   }) async {
     // 1. 이미지 디코드
@@ -15,8 +15,9 @@ class ImageCropper {
 
     img.Image workingImage = originalImage;
 
-    // 💡 [2배수 리사이징 기능]
-    // 들어온 원본 이미지가 현재 모드의 최종 목표 크기(예: 1260x1080)보다 크다면 목표 크기로 줄여줍니다.
+    // 2배수 resize
+    // 들어온 원본 이미지가 현재 모드의 최종 목표 크기보다 크다면 목표 크기로 resize
+
     final int targetWidth = mode.pieceWidth * mode.cols;
     final int targetHeight = mode.pieceHeight * mode.rows;
 
@@ -30,7 +31,7 @@ class ImageCropper {
       );
     }
 
-    // 🌟 [변수 자동화] 하드코딩되어 있던 수치들을 현재 모드(mode)에 등록된 값으로 싹 교체합니다!
+    // 현재 mode에 등록된 값으로 교체
     final int pieceWidth = mode.pieceWidth; // 180 또는 360
     final int pieceHeight = mode.pieceHeight; // 180 또는 360
     final int cols = mode.cols; // 7 또는 6
@@ -40,10 +41,10 @@ class ImageCropper {
     List<Uint8List> pieces = [];
     int currentPiece = 0;
 
-    // ✂️ 자르기 시작 (가로 x 세로 반복문)
+    // crop 시작 (가로 x 세로 반복문)
     for (int y = 0; y < rows; y++) {
       for (int x = 0; x < cols; x++) {
-        // 🌟 [핵심 예외 처리] 360모드일 때 32장을 다 잘랐다면 마지막 줄 4칸은 자르지 않고 즉시 탈출!
+        // 360모드일 때 32장을 다 잘랐다면 마지막 줄 4칸은 자르지 않고 break
         if (currentPiece >= totalPieces) {
           break;
         }

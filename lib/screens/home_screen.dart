@@ -60,8 +60,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int _currentProgress = 0;
 
-  bool _isBonobonoMode = true;
-
   SplitMode _currentMode = SplitMode.size180_42;
 
   // 이미지를 선택, 크롭
@@ -220,28 +218,15 @@ class _HomeScreenState extends State<HomeScreen> {
       extendBodyBehindAppBar: true,
 
       appBar: AppBar(
-        title: GestureDetector(
-          onTap: () {
-            setState(() {
-              _isBonobonoMode = !_isBonobonoMode;
-            });
-          },
-          child: const Text('아아아아아아 너무 귀찮아아아아아'),
-        ),
-        backgroundColor: _isBonobonoMode ? Colors.transparent : Colors.blueGrey,
-        elevation: _isBonobonoMode ? 0 : 4,
+        title: const Text('이모티콘 분할기'),
+
+        // background, elevation을 블루그레이로 고정
+        backgroundColor: Colors.blueGrey,
+        elevation: 4,
         foregroundColor: Colors.white,
       ),
       body: Container(
-        decoration: BoxDecoration(
-          color: _isBonobonoMode ? Colors.transparent : Colors.white,
-          image: _isBonobonoMode
-              ? DecorationImage(
-                  image: AssetImage('assets/images/22.jpg'),
-                  fit: BoxFit.cover,
-                )
-              : null,
-        ),
+        decoration: const BoxDecoration(color: Colors.white),
 
         child: SafeArea(
           child: Center(
