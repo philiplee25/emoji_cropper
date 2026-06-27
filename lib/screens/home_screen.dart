@@ -42,6 +42,16 @@ enum SplitMode {
   bool isValidSize(int width, int height) {
     return allowedDimensions.any((dim) => dim[0] == width && dim[1] == height);
   }
+
+  // 허용된 사이즈 리스트를 읽어서 안내 문구를 자동으로 만들어주는 기능
+  String get guideText {
+    // [[1260, 1080], [2520, 2160]] -> "1260x1080 또는 2520x2160" 형태로 자동 변환!
+    final dimensionsText = allowedDimensions
+        .map((dim) => '${dim[0]}x${dim[1]}')
+        .join(' 또는 ');
+
+    return '$dimensionsText 로만 올려야함';
+  }
 }
 
 class HomeScreen extends StatefulWidget {
@@ -116,8 +126,15 @@ class _HomeScreenState extends State<HomeScreen> {
         _pieceOrder.addAll(List.generate(result.length, (index) => index));
       });
     } catch (e) {
-      // ImageCropper가 throw Exception으로 던진 에러 catch
-      _showErrorDialogs();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${_currentMode.label} 제대로 올리라고'),
+            backgroundColor: Colors.redAccent,
+            duration: const Duration(seconds: 3), // 3초 뒤에 자동으로 사라짐
+          ),
+        );
+      }
     } finally {
       setState(() {
         _isLoading = false; // 성공하든 실패하든 로딩 끝
@@ -146,72 +163,6 @@ class _HomeScreenState extends State<HomeScreen> {
     web.URL.revokeObjectURL(url);
   }
 
-  Future<void> _showErrorDialogs() async {
-    // 1. 23개의 각기 다른 멘트를 리스트로 준비합니다.
-    final List<String> messages = [
-      "30) 엇?",
-      "29) ㅎㅎㅎㅎㅎㅎㅎㅎㅎㅎㅎ",
-      "28) 규격에 맞지 않는 사진을 올리셨네요?ㅎㅎ",
-      "27) 이러시면 제가 아주 곤란합니다",
-      "26) 1260x1080 아니면 2520x2160 만 올리라 했는데 말이야",
-      "25) 나는 분명 경고를 했었어 ㅎㅎ",
-      "24) 왜 말을 안들으셨어요",
-      "23) 안되겠다",
-      "22) 너는 혼 좀 나야겠다",
-      "21) 몇대 맞을래",
-      "20) 한대? 한대로 되겠어?",
-      "19) 짝!",
-      "18) 다음부터는 안틀려야겠지?",
-      "17) 괜히 잘못 올렸다 싶죠?",
-      "16) 아차싶죠?",
-      "15) 잘못 걸렸다 싶죠?",
-      "14) 화나시나요 ㅎㅎㅎㅎㅎㅎㅎㅎㅎㅎㅎㅎ",
-      "13) 그치만 센세가 뭘 할 수 있죠?",
-      "12) 깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔깔",
-      "11) 꼬우면 개발자 하던가~",
-      "10) 개빡쳐도 해야지 어쩌겠어요 ㅎㅎ 화이팅~",
-      "9) 영!",
-      "8) 차!",
-      "7) 영!",
-      "6) 차!",
-      "5) 이제 진짜 다왔다.",
-      "4)끝이 보이네ㅠ",
-      "3)너무 아쉽고",
-      "2) 두개만 더!",
-      "1) 마지막 한개!",
-      "1) 회원님 한개만 더!",
-      "1) 회원님 진짜 마지막 한개만 더!",
-      "1) 회원님 진짜 진짜 마지막으로 한개만 더!",
-      "1) 진짜 마지막! 할 수 있따!",
-      "다음부턴 틀리지 말고 잘 확인한 후 올리세요^^",
-    ];
-
-    // 2. 리스트의 길이(23번)만큼 반복문을 돌립니다.
-    for (int i = 0; i < messages.length; i++) {
-      // 🌟 await가 핵심! 사용자가 창을 닫을 때까지 여기서 코드가 멈춰서 기다립니다.
-      await showDialog(
-        context: context,
-        barrierDismissible: false, // 😈 악마의 옵션: 창 바깥의 까만 배경을 눌러도 안 닫히게 막아버립니다!
-        builder: (context) {
-          return AlertDialog(
-            title: Text(
-              '저런ㅋ', // 타이틀에 현재 몇 번째 창인지 보여줍니다.
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            content: Text(messages[i]),
-            actions: [
-              TextButton(
-                onPressed: () =>
-                    Navigator.pop(context), // 팝업 닫기 (이걸 눌러야 다음 반복문으로 넘어감)
-                child: const Text('확인ㅋ'),
-              ),
-            ],
-          );
-        },
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -235,7 +186,6 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // 🌟 [추가 3] 세그먼트 버튼 UI
                   SegmentedButton<SplitMode>(
                     // 현재 선택된 모드 (Set 형태로 넣어줘야 합니다)
                     selected: <SplitMode>{_currentMode},
@@ -248,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       });
                     },
 
-                    // 🌟 enum에 등록된 모드들을 기반으로 버튼들을 생성합니다.
+                    // enum에 등록된 모드들을 기반으로 버튼 생성
                     segments: SplitMode.values.map<ButtonSegment<SplitMode>>((
                       SplitMode mode,
                     ) {
@@ -262,15 +212,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     }).toList(),
 
-                    // 디자인 커스텀 (보노보노 테마에도 잘 어울리게 반투명 화이트/블루그레이 톤으로)
                     style: SegmentedButton.styleFrom(
                       selectedBackgroundColor: Colors.blueGrey,
                       selectedForegroundColor: Colors.white,
                       backgroundColor: Colors.white.withValues(alpha: 0.8),
                     ),
                   ),
+                  const SizedBox(height: 16), // 버튼과 텍스트 사이 간격 살짝 좁힘
+                  // 🌟 [추가] 모드가 바뀔 때마다 스르륵 바뀌는 마법의 안내 텍스트!
+                  Text(
+                    _currentMode.guideText,
+                    style: const TextStyle(
+                      color: Colors.blueGrey,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
 
-                  const SizedBox(height: 30), // 버튼과 이미지 불러오기 사이 간격
+                  const SizedBox(height: 16), // 텍스트와 이미지 불러오기 버튼 사이 간격
                   // 1. 이미지 업로드 버튼
                   ElevatedButton.icon(
                     onPressed: _isLoading ? null : _pickAndProcessImage,
@@ -411,12 +370,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         },
                       ),
-                    )
-                  else
-                    // 이미지를 아직 올리지 않았을 때 보여주는 문구
-                    const Text(
-                      '1260x1080 or 2520x2160 크기 아니면 후회할거임 ㅎㅎㅎㅎ',
-                      style: TextStyle(color: Colors.black, fontSize: 14),
                     ),
                 ],
               ),
@@ -427,182 +380,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
-//       body: Center(
-//         child: Padding(
-//           padding: const EdgeInsets.all(20.0),
-//           child: Column(
-//             mainAxisAlignment: MainAxisAlignment.center,
-//             children: [
-//               // 1. 이미지 업로드 버튼
-//               ElevatedButton.icon(
-//                 onPressed: _isLoading ? null : _pickAndProcessImage,
-//                 icon: const Icon(Icons.upload_file),
-//                 label: const Text('이미지 가져오기'),
-//                 style: ElevatedButton.styleFrom(
-//                   padding: const EdgeInsets.symmetric(
-//                     horizontal: 24,
-//                     vertical: 16,
-//                   ),
-//                   textStyle: const TextStyle(
-//                     fontSize: 16,
-//                     fontWeight: FontWeight.bold,
-//                   ),
-//                 ),
-//               ),
-//               const SizedBox(height: 30),
-
-//               if (_croppedPieces.isNotEmpty && !_isLoading) ...[
-//                 ElevatedButton.icon(
-//                   onPressed: () {
-//                     // 텍스트 필드가 사라졌으니, 조각과 순서표만 깔끔하게 넘깁니다!
-//                     AllDownload.downloadZip(_croppedPieces, _pieceOrder);
-//                   },
-//                   icon: const Icon(Icons.folder_zip),
-//                   label: const Text('모든 조각 한번에 다운로드 (ZIP)'),
-//                   style: ElevatedButton.styleFrom(
-//                     backgroundColor: Colors.teal,
-//                     foregroundColor: Colors.white,
-//                     padding: const EdgeInsets.symmetric(
-//                       horizontal: 32,
-//                       vertical: 18,
-//                     ),
-//                     textStyle: const TextStyle(
-//                       fontSize: 15,
-//                       fontWeight: FontWeight.bold,
-//                     ),
-//                     shape: RoundedRectangleBorder(
-//                       borderRadius: BorderRadius.circular(8),
-//                     ),
-//                   ),
-//                 ),
-//                 const SizedBox(height: 30),
-//               ],
-
-//               // 2. 상태에 따른 화면 노출 (로딩 중 / 바둑판 / 대기 화면)
-//               if (_isLoading)
-//                 Column(
-//                   mainAxisAlignment: MainAxisAlignment.center,
-//                   children: [
-//                     Text(
-//                       _currentProgress == 0
-//                           ? '이미지 분석 및 리사이즈 중...' // 0일 때
-//                           : '$_currentProgress / 42 분할 중...', // 1부터
-//                       style: const TextStyle(
-//                         fontSize: 16,
-//                         fontWeight: FontWeight.bold,
-//                         color: Colors.teal,
-//                       ),
-//                     ),
-//                   ],
-//                 )
-//               else if (_croppedPieces.isNotEmpty)
-//                 // 이미지가 성공적으로 잘렸다면 7x6 GridView
-//                 Expanded(
-//                   child: ReorderableGridView.builder(
-//                     // drag&drop 인식시간 0.3초
-//                     dragStartDelay: const Duration(milliseconds: 300),
-
-//                     gridDelegate:
-//                         const SliverGridDelegateWithFixedCrossAxisCount(
-//                           crossAxisCount: 7,
-//                           crossAxisSpacing: 8,
-//                           mainAxisSpacing: 8,
-//                         ),
-//                     itemCount: _croppedPieces.length,
-//                     // 🌟 드래그 앤 드롭으로 위치가 바뀌었을 때 실행되는 함수입니다!
-//                     onReorder: (oldIndex, newIndex) {
-//                       setState(() {
-//                         // 번호표 리스트에서 원래 있던 번호를 빼서, 새로운 자리에 쏙 끼워 넣습니다.
-//                         final int item = _pieceOrder.removeAt(oldIndex);
-//                         _pieceOrder.insert(newIndex, item);
-//                       });
-//                     },
-//                     itemBuilder: (context, index) {
-//                       // 현재 자리에 와야 할 이미지의 진짜 번호
-//                       int realPieceIndex = _pieceOrder[index];
-
-//                       return Container(
-//                         // ReorderableGridView는 각 조각이 누군지 구분하기 위해 고유한 key가 반드시 필요!!!!!
-//                         key: ValueKey(realPieceIndex),
-//                         decoration: BoxDecoration(
-//                           border: Border.all(color: Colors.grey.shade300),
-//                           borderRadius: BorderRadius.circular(4),
-//                         ),
-//                         child: Stack(
-//                           fit: StackFit.expand,
-//                           children: [
-//                             ClipRRect(
-//                               borderRadius: BorderRadius.circular(4),
-//                               // 순서가 바뀐 번호표(realPieceIndex)에 맞는 이미지를 그려줍니다.
-//                               child: Image.memory(
-//                                 _croppedPieces[realPieceIndex],
-//                                 fit: BoxFit.cover,
-//                               ),
-//                             ),
-//                             Material(
-//                               color: Colors.transparent,
-//                               child: InkWell(
-//                                 onTap: () => _downloadImage(
-//                                   _croppedPieces[realPieceIndex],
-//                                   index,
-//                                 ),
-//                                 child: Container(
-//                                   alignment: Alignment.bottomRight,
-//                                   padding: const EdgeInsets.all(4),
-//                                   child: Container(
-//                                     decoration: BoxDecoration(
-//                                       color: Colors.black.withValues(
-//                                         alpha: 0.6,
-//                                       ),
-//                                       shape: BoxShape.circle,
-//                                     ),
-//                                     child: const Padding(
-//                                       padding: EdgeInsets.all(6.0),
-//                                       child: Icon(
-//                                         Icons.download,
-//                                         color: Colors.white,
-//                                         size: 20,
-//                                       ),
-//                                     ),
-//                                   ),
-//                                 ),
-//                               ),
-//                             ),
-//                           ],
-//                         ),
-//                       );
-//                     },
-//                   ),
-//                 )
-//               else
-//                 // 이미지를 아직 올리지 않았을 때 보여주는 문구
-//                 const Text(
-//                   '1260x1080 or 2520x2160 크기 아니면 후회할거임 ㅎㅎㅎㅎ',
-//                   style: TextStyle(color: Colors.black, fontSize: 14),
-//                 ),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-//   //  보노보노 배경
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       // body를 appbar 뒤쪽 꼭대기까지 확장
-//       extendBodyBehindAppBar: true,
-
-//       appBar: AppBar(
-//         title: const Text(
-//           '아아아아아아 너무 귀찮아아아아아',
-//           style: TextStyle(color: Colors.black),
-//         ),
-//         // appbar 배경 투명화, 그림자 제거
-//         backgroundColor: Colors.transparent,
-//         elevation: 0,
-//         foregroundColor: Colors.white,
-//       ),
