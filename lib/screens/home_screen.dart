@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../utils/image_cropper.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
-import 'package:flutter/material.dart';
 
 enum SplitMode {
   // 180 모드는 1260x1080 원본과 2520x2160(2배수) 모두 허용
@@ -15,9 +14,10 @@ enum SplitMode {
     [2520, 2160],
   ]),
 
-  // 360 모드는 2160x2160만 허용
+  // 360 모드는 2160x2160 원본과 원본과 2520x2160(2배수) 모두 허용
   size360_32('360x360 이모티콘', 360, 360, 6, 6, 32, [
     [2160, 2160],
+    [4320, 4320],
   ]);
 
   final String label;
