@@ -6,6 +6,19 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../utils/image_cropper.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
+import 'package:flutter/material.dart';
+
+enum SplitMode {
+  // ('화면 표시 이름', 가로 픽셀, 세로 픽셀)
+  size180_42('180x180 분할 (7x6 / 42장)', 180, 180),
+  size360_32('360x360 분할 (6x6 / 32장)', 360, 360);
+
+  final String label;
+  final int pieceWidth;
+  final int pieceHeight;
+
+  const SplitMode(this.label, this.pieceWidth, this.pieceHeight);
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +37,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentProgress = 0;
 
   bool _isBonobonoMode = true;
+
+  SplitMode _currentMode = SplitMode.size180_42;
 
   // 이미지를 선택, 크롭
   Future<void> _pickAndProcessImage() async {
@@ -210,6 +225,42 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // 🌟 [추가 3] 세그먼트 버튼 UI
+                  SegmentedButton<SplitMode>(
+                    // 현재 선택된 모드 (Set 형태로 넣어줘야 합니다)
+                    selected: <SplitMode>{_currentMode},
+
+                    // 모드가 변경되었을 때 상태 변경
+                    onSelectionChanged: (Set<SplitMode> newSelection) {
+                      setState(() {
+                        // 선택된 세트에서 첫 번째 요소를 가져옵니다.
+                        _currentMode = newSelection.first;
+                      });
+                    },
+
+                    // 🌟 enum에 등록된 모드들을 기반으로 버튼들을 생성합니다.
+                    segments: SplitMode.values.map<ButtonSegment<SplitMode>>((
+                      SplitMode mode,
+                    ) {
+                      return ButtonSegment<SplitMode>(
+                        value: mode,
+                        label: Text(
+                          // '180x180 분할' 처럼 글자만 깔끔하게 요약해서 노출
+                          mode.label.split(' ').first,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      );
+                    }).toList(),
+
+                    // 디자인 커스텀 (보노보노 테마에도 잘 어울리게 반투명 화이트/블루그레이 톤으로)
+                    style: SegmentedButton.styleFrom(
+                      selectedBackgroundColor: Colors.blueGrey,
+                      selectedForegroundColor: Colors.white,
+                      backgroundColor: Colors.white.withValues(alpha: 0.8),
+                    ),
+                  ),
+
+                  const SizedBox(height: 30), // 버튼과 이미지 불러오기 사이 간격
                   // 1. 이미지 업로드 버튼
                   ElevatedButton.icon(
                     onPressed: _isLoading ? null : _pickAndProcessImage,
