@@ -1,67 +1,57 @@
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
+// 🌟 [중요] SplitMode가 정의된 home_screen.dart 파일의 경로를 올바르게 연결해 줍니다.
+import '../screens/home_screen.dart';
 
 class ImageCropper {
-  /// 1260x1080 이미지를 받아서 180x180 42개로 나누는 함수
   static Future<List<Uint8List>> splitImage(
     Uint8List inputImageBytes, {
+    required SplitMode mode, // 🌟 이제 mode 파라미터를 필수(required)로 받습니다!
     Function(int current, int total)? onProgress,
   }) async {
-    // 잘린 42개의 이미지 list
-    List<Uint8List> pieces = [];
-
-    // 1. 도마 위에 이미지 올리기
-    // 사용자가 올린 파일을 픽셀 단위로 편집할 수 있게 변환합니다.
+    // 1. 이미지 디코드
     img.Image? originalImage = img.decodeImage(inputImageBytes);
-
-    // 만약 이미지가 깨졌거나 이상한 파일이면 에러
-    if (originalImage == null) {
-      throw Exception();
-    }
-
-    await Future.delayed(const Duration(milliseconds: 50));
-
-    // 규격표 정의
-    const int targetWidth = 1260;
-    const int targetHeight = 1080;
-    const int allowedWidth2 = 2520;
-    const int allowedHeight2 = 2160;
+    if (originalImage == null) throw Exception("이미지를 읽을 수 없습니다.");
 
     img.Image workingImage = originalImage;
 
-    if (originalImage.width == targetWidth &&
-        originalImage.height == targetHeight) {
-      // 케이스 1: 1260 x 1080 (정상 규격) -> 통과! 아무것도 안 함.
-    } else if (originalImage.width == allowedWidth2 &&
-        originalImage.height == allowedHeight2) {
-      // 케이스 2: 2520 x 2160 (2배 규격) -> 압축기 돌려서 1260x1080으로 만듦!
+    // 💡 [2배수 리사이징 기능]
+    // 들어온 원본 이미지가 현재 모드의 최종 목표 크기(예: 1260x1080)보다 크다면 목표 크기로 줄여줍니다.
+    final int targetWidth = mode.pieceWidth * mode.cols;
+    final int targetHeight = mode.pieceHeight * mode.rows;
+
+    if (originalImage.width != targetWidth ||
+        originalImage.height != targetHeight) {
       workingImage = img.copyResize(
         originalImage,
         width: targetWidth,
         height: targetHeight,
+        interpolation: img.Interpolation.linear,
       );
-      await Future.delayed(const Duration(milliseconds: 50));
-    } else {
-      // 케이스 3: 그 외의 모든 이상한 사이즈 -> 작업 중단하고 에러 던지기!
-      throw Exception();
     }
 
-    // 자를 조각의 규격 설정
-    const int pieceWidth = 180;
-    const int pieceHeight = 180;
+    // 🌟 [변수 자동화] 하드코딩되어 있던 수치들을 현재 모드(mode)에 등록된 값으로 싹 교체합니다!
+    final int pieceWidth = mode.pieceWidth; // 180 또는 360
+    final int pieceHeight = mode.pieceHeight; // 180 또는 360
+    final int cols = mode.cols; // 7 또는 6
+    final int rows = mode.rows; // 6 또는 6
+    final int totalPieces = mode.totalPieces; // 42 또는 32 (360 모드는 32장만!)
 
-    int totalPieces = 42; // 총 조각 개수
-    int currentPiece = 0; // 현재 자른 조각 개수
+    List<Uint8List> pieces = [];
+    int currentPiece = 0;
 
-    // 2. crop range 설정 (세로 6줄, 가로 7칸 = 총 42번 반복)
-    for (int y = 0; y < 6; y++) {
-      for (int x = 0; x < 7; x++) {
-        // 어디서부터 자를지 시작점 계산
+    // ✂️ 자르기 시작 (가로 x 세로 반복문)
+    for (int y = 0; y < rows; y++) {
+      for (int x = 0; x < cols; x++) {
+        // 🌟 [핵심 예외 처리] 360모드일 때 32장을 다 잘랐다면 마지막 줄 4칸은 자르지 않고 즉시 탈출!
+        if (currentPiece >= totalPieces) {
+          break;
+        }
+
         int startX = x * pieceWidth;
         int startY = y * pieceHeight;
 
-        // 3. crop
-        // copyCrop이라는 기본 제공 기능으로 원하는 위치와 크기만큼 잘라냅니다.
+        // 한 조각 떼어내기
         img.Image croppedPiece = img.copyCrop(
           workingImage,
           x: startX,
@@ -70,21 +60,25 @@ class ImageCropper {
           height: pieceHeight,
         );
 
-        // 4. list에 넣기
-        // 잘라낸 픽셀 데이터를 PNG 형태로 encoding
-        pieces.add(img.encodePng(croppedPiece));
+        // PNG 바이트 데이터로 인코딩해서 리스트에 담기
+        pieces.add(Uint8List.fromList(img.encodePng(croppedPiece)));
 
         currentPiece++;
+
+        // 화면에 진행률(1/32, 2/32...) 알려주기
         if (onProgress != null) {
           onProgress(currentPiece, totalPieces);
         }
 
-        // 1개 이미지당 0.001초 대기
+        // 브라우저 멈춤 방지를 위한 아주 짧은 휴식
         await Future.delayed(const Duration(milliseconds: 1));
+      }
+      // 바깥쪽 반복문도 안전하게 탈출
+      if (currentPiece >= totalPieces) {
+        break;
       }
     }
 
-    // 5. 잘린 42개 이미지 return
     return pieces;
   }
 }

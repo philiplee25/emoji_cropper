@@ -9,15 +9,39 @@ import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import 'package:flutter/material.dart';
 
 enum SplitMode {
-  // ('화면 표시 이름', 가로 픽셀, 세로 픽셀)
-  size180_42('180x180 분할 (7x6 / 42장)', 180, 180),
-  size360_32('360x360 분할 (6x6 / 32장)', 360, 360);
+  // 180 모드는 1260x1080 원본과 2520x2160(2배수) 모두 허용
+  size180_42('180x180 분할', 180, 180, 7, 6, 42, [
+    [1260, 1080],
+    [2520, 2160],
+  ]),
+
+  // 360 모드는 2160x2160만 허용
+  size360_32('360x360 이모티콘', 360, 360, 6, 6, 32, [
+    [2160, 2160],
+  ]);
 
   final String label;
   final int pieceWidth;
   final int pieceHeight;
+  final int cols;
+  final int rows;
+  final int totalPieces;
+  final List<List<int>> allowedDimensions; // 허용되는 해상도 리스트
 
-  const SplitMode(this.label, this.pieceWidth, this.pieceHeight);
+  const SplitMode(
+    this.label,
+    this.pieceWidth,
+    this.pieceHeight,
+    this.cols,
+    this.rows,
+    this.totalPieces,
+    this.allowedDimensions,
+  );
+
+  // 들어온 이미지가 허용 리스트에 있는지 검사
+  bool isValidSize(int width, int height) {
+    return allowedDimensions.any((dim) => dim[0] == width && dim[1] == height);
+  }
 }
 
 class HomeScreen extends StatefulWidget {
@@ -43,7 +67,6 @@ class _HomeScreenState extends State<HomeScreen> {
   // 이미지를 선택, 크롭
   Future<void> _pickAndProcessImage() async {
     final ImagePicker picker = ImagePicker();
-
     // 1. image file 열기
     final XFile? imageFile = await picker.pickImage(
       source: ImageSource.gallery,
@@ -55,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _isLoading = true; // 로딩 시작!
       _croppedPieces = []; // 기존 조각들 초기화
-      _currentProgress = 0; // 진행률 0/42로 초기화
+      _currentProgress = 0; // 진행률 초기화
     });
 
     await Future.delayed(const Duration(milliseconds: 300));
@@ -69,14 +92,16 @@ class _HomeScreenState extends State<HomeScreen> {
       final int w = imageInfo.width;
       final int h = imageInfo.height;
 
-      // 규격이 안 맞으면? 가위질(ImageCropper)로 안 넘기고 여기서 바로 쳐냅니다!
-      if (!((w == 1260 && h == 1080) || (w == 2520 && h == 2160))) {
+      // 🌟 [수정 1] 규격 검사 자동화!
+      // 현재 세그먼트 버튼으로 선택된 모드(_currentMode)의 허용 리스트에 없으면 바로 에러를 냅니다.
+      if (!_currentMode.isValidSize(w, h)) {
         throw Exception();
       }
 
       // 3. ImageCropper에 데이터 넘기기
       final List<Uint8List> result = await ImageCropper.splitImage(
         imageBytes,
+        mode: _currentMode, // 🌟 [수정 2] 뒤에서 칼질할 요리사에게 현재 선택된 모드 명세서를 던져줍니다!
         onProgress: (current, total) {
           setState(() {
             _currentProgress = current; // 요리사가 부른 숫자를 화면 변수에 넣고 새로고침!
